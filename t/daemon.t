@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Test::More qw(no_plan);
 use File::Temp qw(tempdir);
-use File::Slurp;
+use File::Slurper qw(read_text write_text);
 use FindBin;
 use Time::HiRes;
 use Eval::LineNumbers qw(eval_line_numbers);
@@ -18,7 +18,7 @@ my $tmp = tempdir();
 
 my $base = "$^X $tmp/daemon.pl -c $tmp/config";
 
-write_file("$tmp/logger", <<END_LOGGER);
+write_text("$tmp/logger", <<END_LOGGER);
 #!$^X
 
 open \$out, ">>", \$ENV{LOGGER_OUTPUT}
@@ -36,7 +36,7 @@ chmod(0755, "$tmp/logger") or die;
 $ENV{LOGGER_OUTPUT} = "$tmp/log";
 $ENV{PATH} = "$tmp:$ENV{PATH}";
 
-# diag read_file("$tmp/config");
+# diag read_text("$tmp/config");
 
 my $daemon_header = eval_line_numbers(<<'END_HEADER'); #{
 
@@ -72,7 +72,7 @@ my $daemon_body = eval_line_numbers(<<'END_BODY'); #{
 		if ($c{DIE}) {
 			die $c{DIE};
 		}
-		write_file($c{COUNTER}, "$counter\n");
+		write_text($c{COUNTER}, "$counter\n");
 		$counter++;
 		sleep($sleeptime) if $sleeptime;
 	}
@@ -93,7 +93,7 @@ my $daemon_body = eval_line_numbers(<<'END_BODY'); #{
 		$self->{gd_foreground} = $config{foreground};
 		$rc++;
 		if ($config{RELOAD}) {
-			write_file($config{RELOAD}, "$rc\n");
+			write_text($config{RELOAD}, "$rc\n");
 		}
 		if ($config{PATH}) {
 			$ENV{PATH} = $config{PATH};
@@ -168,13 +168,13 @@ sub setup_test
 
 	unlink "$tmp/$_" for qw(pid counter counter1 log);
 
-	write_file("$tmp/daemon.pl", "use lib '$FindBin::Bin/../lib';\n", $daemon_header, $head_frag, $daemon_body, $body_frag || '');
+	write_text("$tmp/daemon.pl", "use lib '$FindBin::Bin/../lib';\n", $daemon_header, $head_frag, $daemon_body, $body_frag || '');
 
 	config_deamon();
 }
 
 sub config_deamon {
-	write_file("$tmp/config", <<END_CONFIG);
+	write_text("$tmp/config", <<END_CONFIG);
 pidfile=$tmp/pid
 COUNTER=$tmp/counter
 RELOAD_COUNTER=$tmp/reload
@@ -191,27 +191,27 @@ sub do_test
 	like(run('start'), qr/Starting/, "start message - $name");
 
 	expect { -s "$tmp/pid" };
-	my $pid = read_file("$tmp/pid");
+	my $pid = read_text("$tmp/pid");
 	chomp($pid);
 	like($pid, qr/^\d+$/, "pid");
 
 	expect { -s "$tmp/counter" };
-	my $counter1 = read_file("$tmp/pid");
+	my $counter1 = read_text("$tmp/pid");
 	chomp($counter1);
 	like($counter1, qr/^\d+$/, "counter1 - $name");
 
 	expect { -e "$tmp/log" };
-	like(read_file("$tmp/log"), qr/START LOG/, "logged output");
+	like(read_text("$tmp/log"), qr/START LOG/, "logged output");
 
-	expect { my @l = read_file("$tmp/log"); @l > 1 };
-	like(read_file("$tmp/log"), qr/Sucessfully daemonized/, "daemonized");
+	expect { my @l = read_text("$tmp/log"); @l > 1 };
+	like(read_text("$tmp/log"), qr/Sucessfully daemonized/, "daemonized");
 
 	append_file("$tmp/config", "COUNTER=$tmp/counter2");
 
 	like(run('reload'), qr/reconfiguration/, "reconfig message");
 
 	expect { -s "$tmp/counter2" };
-	my $counter2 = read_file("$tmp/pid");
+	my $counter2 = read_text("$tmp/pid");
 	chomp($counter2);
 	like($counter2, qr/^\d+$/, "counter2");
 

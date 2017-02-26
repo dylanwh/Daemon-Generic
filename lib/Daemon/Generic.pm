@@ -6,7 +6,7 @@ use warnings;
 require Exporter;
 require POSIX;
 use Getopt::Long;
-use File::Slurp;
+use File::Slurper qw(read_text);
 use File::Flock::Forking;
 use File::Flock;
 our @ISA = qw(Exporter);
@@ -106,7 +106,7 @@ sub new
 			}
 		} else {
 			sleep(2) if -M $pidfile < 2/86400;
-			my $oldpid = read_file($pidfile);
+			my $oldpid = read_text($pidfile);
 			chomp($oldpid);
 			if ($oldpid) {
 				if ($do eq 'stop' or $do eq 'restart') {

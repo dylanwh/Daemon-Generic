@@ -1,5 +1,7 @@
 Revision history for Perl module Daemon::Generic
 
+0.85 2017/02/25
+ - Replace File::Slurp with File::Slurper to get rid of warnings on newer versions of perl
 
 0.84 2013/10/04
 
